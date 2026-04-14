@@ -1,0 +1,166 @@
+{
+  "name": "vscode-review-comments",
+  "displayName": "Review Comments",
+  "description": "Google Docs-style inline review comments on local files. Leave comments, discuss in threads, resolve when done. Designed for AI-assisted code review workflows.",
+  "version": "0.1.0",
+  "publisher": "kmuzykov",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "review-comments.createComment",
+        "title": "Add Review Comment",
+        "icon": "$(add)",
+        "enablement": "commentIsEmpty == false"
+      },
+      {
+        "command": "review-comments.reply",
+        "title": "Reply",
+        "enablement": "commentIsEmpty == false"
+      },
+      {
+        "command": "review-comments.resolve",
+        "title": "Resolve Thread",
+        "icon": "$(check)"
+      },
+      {
+        "command": "review-comments.unresolve",
+        "title": "Reopen Thread",
+        "icon": "$(issues)"
+      },
+      {
+        "command": "review-comments.deleteThread",
+        "title": "Delete Thread",
+        "icon": "$(x)"
+      },
+      {
+        "command": "review-comments.deleteComment",
+        "title": "Delete Comment",
+        "icon": "$(close)"
+      },
+      {
+        "command": "review-comments.editComment",
+        "title": "Edit",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "review-comments.saveComment",
+        "title": "Save",
+        "icon": "$(check)"
+      },
+      {
+        "command": "review-comments.cancelEdit",
+        "title": "Cancel",
+        "icon": "$(close)"
+      },
+      {
+        "command": "review-comments.resolveAll",
+        "title": "Resolve All Comments",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "review-comments.goToComment",
+        "title": "Go to Comment"
+      }
+    ],
+    "menus": {
+      "comments/commentThread/title": [
+        {
+          "command": "review-comments.resolve",
+          "group": "inline@1",
+          "when": "commentController == review-comments && commentThread != resolved"
+        },
+        {
+          "command": "review-comments.unresolve",
+          "group": "inline@1",
+          "when": "commentController == review-comments && commentThread == resolved"
+        },
+        {
+          "command": "review-comments.deleteThread",
+          "group": "overflow",
+          "when": "commentController == review-comments"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "review-comments.createComment",
+          "group": "inline",
+          "when": "commentController == review-comments && commentThreadIsEmpty"
+        },
+        {
+          "command": "review-comments.reply",
+          "group": "inline",
+          "when": "commentController == review-comments && commentThreadIsEmpty == false"
+        }
+      ],
+      "comments/comment/title": [
+        {
+          "command": "review-comments.editComment",
+          "group": "inline@1",
+          "when": "commentController == review-comments && comment != editing"
+        },
+        {
+          "command": "review-comments.deleteComment",
+          "group": "inline@2",
+          "when": "commentController == review-comments"
+        }
+      ],
+      "comments/comment/context": [
+        {
+          "command": "review-comments.saveComment",
+          "group": "inline@1",
+          "when": "commentController == review-comments && comment == editing"
+        },
+        {
+          "command": "review-comments.cancelEdit",
+          "group": "inline@2",
+          "when": "commentController == review-comments && comment == editing"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "review-comments-container",
+          "title": "Review Comments",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "review-comments-container": [
+        {
+          "id": "review-comments.threads",
+          "name": "Comments"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "review-comments.threads",
+        "contents": "No review comments yet.\nOpen any file and click the \"+\" icon in the gutter to add a comment."
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}
