@@ -1,0 +1,12 @@
+{
+  "name": "kmuzykov",
+  "owner": { "name": "Kirill Muzykov" },
+  "metadata": { "description": "Kirill Muzykov's Claude Code plugins" },
+  "plugins": [
+    {
+      "name": "review-comments",
+      "source": "./",
+      "description": "Line-by-line review comments on local files, shared between VS Code/Cursor and a coding agent."
+    }
+  ]
+}
