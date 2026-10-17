@@ -30,7 +30,7 @@ Both pick the newest `dist/*.vsix` and install it into every editor CLI found on
 
 1. Open the repository root as the single workspace folder.
 2. Open any file, select lines, click `+` in the gutter, write the comment. Threads also appear in the "Review Comments" view in the Activity Bar.
-3. Ask the agent to process the review comments. It replies in each thread and leaves the threads open.
+3. In the same folder (not a separate git worktree, which the agent cannot see your comments from), ask the agent to process the review comments. It replies in each thread and leaves the threads open.
 4. Read the replies and diffs, resolve threads you are happy with, reply to the ones you are not.
 
 Consider adding `.vscode/review-comments.json` to `.gitignore`; it is scratch state.

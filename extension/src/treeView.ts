@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ReviewCommentController } from './commentController';
-import { StoredThread } from './storage';
+import { StoredThread, USER_AUTHOR, lastAuthor } from './model';
 
 type TreeItem = FileItem | ThreadItem;
 
@@ -9,14 +9,16 @@ type TreeItem = FileItem | ThreadItem;
 class FileItem extends vscode.TreeItem {
     constructor(
         public readonly filePath: string,
-        public readonly threadCount: number,
-        public readonly unresolvedCount: number
+        uri: vscode.Uri,
+        threadCount: number,
+        unresolvedCount: number
     ) {
-        super(path.basename(filePath), vscode.TreeItemCollapsibleState.Expanded);
-        this.description = path.dirname(filePath);
-        this.tooltip = `${filePath} (${unresolvedCount} unresolved)`;
+        super(path.posix.basename(filePath), vscode.TreeItemCollapsibleState.Expanded);
+        const dir = path.posix.dirname(filePath);
+        this.description = dir === '.' ? '' : dir;
+        this.tooltip = `${filePath} (${unresolvedCount} of ${threadCount} open)`;
         this.iconPath = vscode.ThemeIcon.File;
-        this.resourceUri = vscode.Uri.file(filePath);
+        this.resourceUri = uri;
     }
 }
 
@@ -27,22 +29,25 @@ class ThreadItem extends vscode.TreeItem {
         public readonly stored: StoredThread
     ) {
         const firstComment = stored.comments[0];
-        const preview = firstComment ? truncate(firstComment.body, 80) : '(empty)';
         const lineLabel = stored.range.startLine === stored.range.endLine
             ? `L${stored.range.startLine + 1}`
             : `L${stored.range.startLine + 1}-${stored.range.endLine + 1}`;
 
-        super(preview, vscode.TreeItemCollapsibleState.None);
+        super(truncate(firstComment?.body ?? '', 80), vscode.TreeItemCollapsibleState.None);
 
-        this.description = lineLabel;
-        this.tooltip = firstComment?.body ?? '';
+        const parts = [lineLabel];
+        if (stored.comments.length > 1)
+            parts.push(`${stored.comments.length - 1} ${stored.comments.length === 2 ? 'reply' : 'replies'}`);
+        const last = lastAuthor(stored);
+        if (!stored.resolved && last !== USER_AUTHOR)
+            parts.push(`${last} replied`);
+        this.description = parts.join(' · ');
+        this.tooltip = new vscode.MarkdownString(stored.comments.map(c => `**${c.author}**: ${c.body}`).join('\n\n'));
         this.iconPath = stored.resolved
             ? new vscode.ThemeIcon('pass', new vscode.ThemeColor('testing.iconPassed'))
-            : new vscode.ThemeIcon('comment', new vscode.ThemeColor('editorInfo.foreground'));
-
-        if (stored.comments.length > 1) {
-            this.description += ` (${stored.comments.length} replies)`;
-        }
+            : last !== USER_AUTHOR
+                ? new vscode.ThemeIcon('comment-unresolved', new vscode.ThemeColor('editorWarning.foreground'))
+                : new vscode.ThemeIcon('comment', new vscode.ThemeColor('editorInfo.foreground'));
 
         this.command = {
             command: 'review-comments.goToComment',
@@ -59,7 +64,7 @@ export class CommentsTreeProvider implements vscode.TreeDataProvider<TreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<TreeItem | undefined | void>();
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(private commentController: ReviewCommentController) {
+    constructor(private commentController: ReviewCommentController, private resolveUri: (filePath: string) => vscode.Uri) {
         commentController.onDidChangeThreads(() => this.refresh());
     }
 
@@ -72,33 +77,24 @@ export class CommentsTreeProvider implements vscode.TreeDataProvider<TreeItem> {
     }
 
     getChildren(element?: TreeItem): vscode.ProviderResult<TreeItem[]> {
+        const threads = this.commentController.getStoredThreads();
         if (!element) {
-            // Root level: group by file
-            const entries = this.commentController.getThreadEntries();
-            const byFile = new Map<string, Array<{ threadId: string; stored: StoredThread }>>();
-
-            for (const entry of entries) {
-                const file = entry.stored.filePath;
-                if (!byFile.has(file))
-                    byFile.set(file, []);
-                byFile.get(file)!.push(entry);
+            const byFile = new Map<string, StoredThread[]>();
+            for (const t of threads) {
+                if (!byFile.has(t.filePath))
+                    byFile.set(t.filePath, []);
+                byFile.get(t.filePath)!.push(t);
             }
-
-            if (byFile.size === 0)
-                return [];
-
-            return Array.from(byFile.entries()).map(([filePath, threads]) => {
-                const unresolvedCount = threads.filter(t => !t.stored.resolved).length;
-                return new FileItem(filePath, threads.length, unresolvedCount);
-            });
+            return [...byFile.entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([filePath, list]) => new FileItem(filePath, this.resolveUri(filePath), list.length, list.filter(t => !t.resolved).length));
         }
 
         if (element instanceof FileItem) {
-            const entries = this.commentController.getThreadEntries();
-            return entries
-                .filter(e => e.stored.filePath === element.filePath)
-                .sort((a, b) => a.stored.range.startLine - b.stored.range.startLine)
-                .map(e => new ThreadItem(e.threadId, e.stored));
+            return threads
+                .filter(t => t.filePath === element.filePath)
+                .sort((a, b) => a.range.startLine - b.range.startLine)
+                .map(t => new ThreadItem(t.id, t));
         }
 
         return [];
@@ -110,8 +106,8 @@ export class CommentsTreeProvider implements vscode.TreeDataProvider<TreeItem> {
 }
 
 function truncate(text: string, max: number): string {
-    const singleLine = text.replace(/\n/g, ' ').trim();
+    const singleLine = text.replace(/\s*\n\s*/g, ' ').trim();
     if (singleLine.length <= max)
-        return singleLine;
-    return singleLine.substring(0, max - 3) + '...';
+        return singleLine || '(empty)';
+    return singleLine.substring(0, max - 1) + '…';
 }

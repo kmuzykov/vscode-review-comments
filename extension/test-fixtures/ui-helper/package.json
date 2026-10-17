@@ -1,0 +1,17 @@
+{
+  "name": "rc-ui-test-helper",
+  "displayName": "Review Comments UI test helper",
+  "description": "Loaded only by the UI tests: opens diff editors the way VS Code's own Git views do.",
+  "version": "0.0.1",
+  "publisher": "kmuzykov-test",
+  "private": true,
+  "engines": { "vscode": "^1.85.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "rcTest.openSnapshotDiff", "title": "RC Test: Open Snapshot Diff" },
+      { "command": "rcTest.openWorkingTreeDiff", "title": "RC Test: Open Working Tree Diff" }
+    ]
+  }
+}

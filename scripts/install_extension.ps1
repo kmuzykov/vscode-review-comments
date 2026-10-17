@@ -13,6 +13,10 @@ if (-not $editors) {
 }
 foreach ($editor in $editors) {
     Write-Host "Installing $($vsix.Name) into $editor"
+    # The editor CLI prints Node deprecation warnings on stderr; under 'Stop' Windows PowerShell 5.1
+    # turns those into a terminating error when stderr is redirected. Judge success by exit code only.
+    $ErrorActionPreference = 'Continue'
     & $editor --install-extension $vsix.FullName --force
+    $ErrorActionPreference = 'Stop'
     if ($LASTEXITCODE -ne 0) { throw "$editor --install-extension failed with exit code $LASTEXITCODE" }
 }

@@ -1,9 +1,17 @@
 {
   "name": "review-comments",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Line-by-line review comments on local files, shared between VS Code/Cursor and a coding agent. Bundles the editor extension and the skill that processes the threads.",
-  "author": { "name": "Kirill Muzykov" },
+  "author": {
+    "name": "Kirill Muzykov"
+  },
   "repository": "https://github.com/kmuzykov/vscode-review-comments",
   "license": "MIT",
-  "keywords": ["review", "comments", "vscode", "cursor", "code-review"]
+  "keywords": [
+    "review",
+    "comments",
+    "vscode",
+    "cursor",
+    "code-review"
+  ]
 }

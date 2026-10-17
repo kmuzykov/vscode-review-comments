@@ -28,7 +28,7 @@ Location: `<first workspace folder>/.vscode/review-comments.json`. The extension
 }
 ```
 
-A thread with no comments is invalid; the extension never writes one.
+A thread with no comments is invalid; the extension never writes one. If the file contains threads it cannot show (missing `id`, `filePath`, `range.startLine` or comments, or a duplicate `id`), it warns, skips them on screen and leaves them in the file untouched. If the whole file is not valid JSON, the editor keeps the last good version and refuses to save until it is fixed, so re-parse after every write.
 
 ## Example
 

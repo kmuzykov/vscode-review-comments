@@ -2,7 +2,7 @@
   "name": "vscode-review-comments",
   "displayName": "Review Comments",
   "description": "Google Docs-style inline review comments on local files. Leave comments, discuss in threads, resolve when done. Designed for AI-assisted code review workflows.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "kmuzykov",
   "license": "MIT",
   "engines": {
@@ -21,56 +21,79 @@
         "command": "review-comments.createComment",
         "title": "Add Review Comment",
         "icon": "$(add)",
-        "enablement": "commentIsEmpty == false"
+        "enablement": "commentIsEmpty == false",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.reply",
         "title": "Reply",
-        "enablement": "commentIsEmpty == false"
+        "enablement": "commentIsEmpty == false",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.resolve",
         "title": "Resolve Thread",
-        "icon": "$(check)"
+        "icon": "$(check)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.unresolve",
         "title": "Reopen Thread",
-        "icon": "$(issues)"
+        "icon": "$(issues)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.deleteThread",
         "title": "Delete Thread",
-        "icon": "$(x)"
+        "icon": "$(x)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.deleteComment",
         "title": "Delete Comment",
-        "icon": "$(close)"
+        "icon": "$(close)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.editComment",
         "title": "Edit",
-        "icon": "$(edit)"
+        "icon": "$(edit)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.saveComment",
         "title": "Save",
-        "icon": "$(check)"
+        "icon": "$(check)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.cancelEdit",
         "title": "Cancel",
-        "icon": "$(close)"
+        "icon": "$(close)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.resolveAll",
         "title": "Resolve All Comments",
-        "icon": "$(check-all)"
+        "icon": "$(check-all)",
+        "category": "Review Comments"
       },
       {
         "command": "review-comments.goToComment",
-        "title": "Go to Comment"
+        "title": "Go to Comment",
+        "category": "Review Comments"
+      },
+      {
+        "command": "review-comments.compareWithBranch",
+        "title": "Compare with Branch…",
+        "category": "Review Comments",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "review-comments.openCommentsFile",
+        "title": "Open Comments File",
+        "category": "Review Comments",
+        "icon": "$(json)"
       }
     ],
     "menus": {
@@ -78,17 +101,17 @@
         {
           "command": "review-comments.resolve",
           "group": "inline@1",
-          "when": "commentController == review-comments && commentThread != resolved"
+          "when": "commentController == review-comments && commentThread =~ /^unresolved:/"
         },
         {
           "command": "review-comments.unresolve",
           "group": "inline@1",
-          "when": "commentController == review-comments && commentThread == resolved"
+          "when": "commentController == review-comments && commentThread =~ /^resolved:/"
         },
         {
           "command": "review-comments.deleteThread",
-          "group": "overflow",
-          "when": "commentController == review-comments"
+          "group": "inline@2",
+          "when": "commentController == review-comments && commentThread =~ /resolved:/"
         }
       ],
       "comments/commentThread/context": [
@@ -126,6 +149,65 @@
           "group": "inline@2",
           "when": "commentController == review-comments && comment == editing"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "review-comments.createComment",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.reply",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.resolve",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.unresolve",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.deleteThread",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.deleteComment",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.editComment",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.saveComment",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.cancelEdit",
+          "when": "false"
+        },
+        {
+          "command": "review-comments.goToComment",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "review-comments.compareWithBranch",
+          "group": "navigation@1",
+          "when": "view == review-comments.threads"
+        },
+        {
+          "command": "review-comments.resolveAll",
+          "group": "navigation@2",
+          "when": "view == review-comments.threads"
+        },
+        {
+          "command": "review-comments.openCommentsFile",
+          "group": "navigation@3",
+          "when": "view == review-comments.threads"
+        }
       ]
     },
     "viewsContainers": {
@@ -148,20 +230,26 @@
     "viewsWelcome": [
       {
         "view": "review-comments.threads",
-        "contents": "No review comments yet.\nOpen any file and click the \"+\" icon in the gutter to add a comment."
+        "contents": "No review comments yet.\nOpen any file in this folder and click the \"+\" in the gutter (or select lines and run \"Comments: Add Comment on Current Selection\") to start a thread.\n[Compare with Branch…](command:review-comments.compareWithBranch)"
       }
     ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test \"out/test/unit/*.test.js\"",
+    "test:integration": "npm run compile && node out/test/runIntegration.js",
+    "test:ui": "npm run compile && node out/test/ui/run.js",
+    "test:all": "npm test && npm run test:integration && npm run test:ui",
     "package": "npx @vscode/vsce package --no-dependencies -o ../dist/"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.3.0",
-    "@vscode/vsce": "^3.0.0"
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.0.0",
+    "playwright-core": "^1.48.2",
+    "typescript": "^5.3.0"
   },
   "repository": {
     "type": "git",
